@@ -12,7 +12,7 @@ import useTokenColorExtraction from 'hooks/useTokenColorExtraction'
 import useTransactionDeadline from 'hooks/useTransactionDeadline'
 import { useUniversalRouterSwapCallback } from 'hooks/useUniversalRouter'
 import { useAtomValue } from 'jotai/utils'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { feeOptionsAtom, Field, swapEventHandlersAtom } from 'state/swap'
 import { TransactionType } from 'state/transactions'
 import invariant from 'tiny-invariant'
@@ -21,6 +21,7 @@ import ActionButton from '../../ActionButton'
 import { SummaryDialog } from '../Summary'
 import { useCollapseToolbar } from '../Toolbar/ToolbarContext'
 import useOnSubmit from './useOnSubmit'
+import { InjectedCallbackContext } from 'components/Plugin/CallbackContext'
 
 /**
  * A swapping ActionButton.
@@ -65,10 +66,21 @@ export default function SwapButton({ disabled }: { disabled: boolean }) {
   // Close the review modal on chain change.
   useEffect(() => setOpen(false), [chainId])
 
+  const injectedCallbackContext = useContext(InjectedCallbackContext)
+
   const setOldestValidBlock = useSetOldestValidBlock()
   const onSubmit = useOnSubmit()
   const throwAsync = useAsyncError()
   const onSwap = useCallback(async () => {
+    const injectedCb = injectedCallbackContext.onConfirmSwap?.({
+      trade: trade!,
+      slippage,
+      gasUseEstimateUSD: gasUseEstimateUSD!,
+    })
+    if (injectedCb?.pervent) {
+      return
+    }
+
     try {
       const submitted = await onSubmit(async () => {
         const response = await swapCallback?.()
