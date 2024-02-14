@@ -77,7 +77,7 @@ export default function SwapButton({ disabled }: { disabled: boolean }) {
       slippage,
       gasUseEstimateUSD: gasUseEstimateUSD!,
     })
-    if (injectedCb?.pervent) {
+    if (injectedCb?.interrupt) {
       return
     }
 

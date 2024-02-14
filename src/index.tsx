@@ -75,6 +75,7 @@ export { TransactionType } from 'state/transactions'
 export type { Theme } from 'theme'
 export { darkTheme, defaultTheme, lightTheme } from 'theme'
 export { invertTradeType, toTradeType } from 'utils/tradeType'
+export { InjectedCallbackContext } from 'components/Plugin/CallbackContext';
 
 export type SwapWidgetProps = SwapProps & WidgetProps
 
