@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/macro'
 import { useWeb3React } from '@web3-react/core'
 import { useAsyncError } from 'components/Error/ErrorBoundary'
+import { IInterruptable, InjectedCallbackContext } from 'components/Plugin/CallbackContext'
 import { ResponsiveDialog } from 'components/ResponsiveDialog'
 import { useSwapInfo } from 'hooks/swap'
 import { useSwapCallback } from 'hooks/swap/useSwapCallback'
@@ -21,7 +22,14 @@ import ActionButton from '../../ActionButton'
 import { SummaryDialog } from '../Summary'
 import { useCollapseToolbar } from '../Toolbar/ToolbarContext'
 import useOnSubmit from './useOnSubmit'
-import { InjectedCallbackContext } from 'components/Plugin/CallbackContext'
+
+const callback2Promise = (callback: () => Promise<IInterruptable> | IInterruptable) => {
+  return new Promise<void>(async (resolve) => {
+    const result = await callback()
+    if (result.interrupt) return
+    resolve()
+  })
+}
 
 /**
  * A swapping ActionButton.
@@ -73,9 +81,9 @@ export default function SwapButton({ disabled }: { disabled: boolean }) {
   const throwAsync = useAsyncError()
   const onSwap = useCallback(async () => {
     const injectedCb = injectedCallbackContext.onConfirmSwap?.({
-      trade: trade!,
+      trade,
       slippage,
-      gasUseEstimateUSD: gasUseEstimateUSD!,
+      gasUseEstimateUSD,
     })
     if (injectedCb?.interrupt) {
       return
@@ -114,10 +122,14 @@ export default function SwapButton({ disabled }: { disabled: boolean }) {
 
   const onReviewSwapClick = useConditionalHandler(useAtomValue(swapEventHandlersAtom).onReviewSwapClick)
   const collapseToolbar = useCollapseToolbar()
+
   const onClick = useCallback(async () => {
+    if (injectedCallbackContext.onReviewSwap) {
+      await callback2Promise(injectedCallbackContext.onReviewSwap)
+    }
     collapseToolbar()
     setOpen(await onReviewSwapClick())
-  }, [onReviewSwapClick, collapseToolbar])
+  }, [injectedCallbackContext.onReviewSwap, collapseToolbar, onReviewSwapClick])
 
   return (
     <>
